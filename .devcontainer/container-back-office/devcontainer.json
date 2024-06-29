@@ -1,0 +1,16 @@
+{
+    "name": "Back-office Container",
+    "dockerComposeFile": "../../docker-compose.yml",
+    // "remoteUser": "root",
+    "runServices": [
+      "traefik",
+      "postgres"
+    ],
+    "service": "back-office",
+    "workspaceFolder": "/var/www/back-office",
+    "shutdownAction": "stopCompose",
+    "postCreateCommand": "uname -a",
+    "mounts": [
+      "type=bind,source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly"
+    ]
+  }
