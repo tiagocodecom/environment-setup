@@ -2,6 +2,13 @@ networks:
   app_network:
     driver: ${DOCKER_NETWORKS_DRIVER}
 
+volumes:
+  tiagocode_postgres:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  tiagocode_pgadmin:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+  
 services:
   traefik:
     build:
@@ -80,6 +87,8 @@ services:
       - RUST_VERSION=${SERVICE_RUST_VERSION}
     networks:
       - app_network
+    volumes:
+      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/app
     profiles:
       - development
       - production
@@ -124,6 +133,7 @@ services:
         - PGADMIN_VERSION=${SERVICE_PGADMIN_VERSION}
     restart: always
     environment:
+      - PGADMIN_LISTEN_PORT=80
       - PGADMIN_DEFAULT_EMAIL=${SERVICE_PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${SERVICE_PGADMIN_PASSWORD}
     volumes:
@@ -137,14 +147,3 @@ services:
       - "traefik.http.routers.pgadmin.rule=Host(`${APPS_ENVIRONMENT}-db.${APPS_DOMAIN_NAME}`)"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
       - "traefik.http.services.pgadmin.loadbalancer.server.scheme=http"
-
-volumes:
-  tiagocode_postgres:
-    driver: ${DOCKER_VOLUMES_DRIVER}
-  
-  tiagocode_back_office:
-    driver: ${DOCKER_VOLUMES_DRIVER}
-
-  tiagocode_pgadmin:
-    driver: ${DOCKER_VOLUMES_DRIVER}
-  
