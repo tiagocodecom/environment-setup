@@ -73,6 +73,7 @@ services:
       context: ./docker/back-office
       dockerfile: Dockerfile
       args:
+        - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
         - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
     environment:
       - RUST_VERSION=${SERVICE_RUST_VERSION}

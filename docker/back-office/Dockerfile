@@ -1,3 +1,5 @@
-ARG BACK_OFFICE_VERSION=latest
+ARG BACK_OFFICE_VERSION
+ARG CONTAINER_REGISTRY
 
-FROM ghcr.io/tiagocodecom/back-office:${BACK_OFFICE_VERSION}
+FROM ${CONTAINER_REGISTRY}/tiagocodecom/back-office:${BACK_OFFICE_VERSION} AS back-office
+
