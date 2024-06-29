@@ -32,8 +32,8 @@ services:
       - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
       # tls
-      - "--entrypoints.web_secure.http.tls.domains[0].main=${APP_DOMAIN_NAME}"
-      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${APP_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].main=${APPS_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${APPS_DOMAIN_NAME}"
       - "--certificatesresolvers.lets_encrypt.acme.storage=/data/acme.json"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
@@ -55,11 +55,13 @@ services:
     volumes:
       - ./docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
+    profiles:
+      - enabled
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=web_secure"
       - "traefik.http.routers.traefik.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.traefik.rule=Host(`${APP_ENVIRONMENT}-traefik.${APP_DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik.rule=Host(`${APPS_ENVIRONMENT}-traefik.${APPS_DOMAIN_NAME}`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
       # - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
@@ -67,16 +69,22 @@ services:
       # - "traefik.http.routers.traefik.middlewares=access-auth"
 
   back-office:
-    image: ghcr.io/tiagocodecom/back-office:latest
+    build: 
+      context: ./docker/back-office
+      dockerfile: Dockerfile
+      args:
+        - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
     environment:
       - RUST_VERSION=${SERVICE_RUST_VERSION}
     networks:
       - app_network
+    profiles:
+      - enabled
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.back_office.entrypoints=web_secure"
       - "traefik.http.routers.back_office.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.back_office.rule=Host(`${APP_ENVIRONMENT}-admin.${APP_DOMAIN_NAME}`)"
+      - "traefik.http.routers.back_office.rule=Host(`${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}`)"
       - "traefik.http.services.back_office.loadbalancer.server.port=8080"
       - "traefik.http.services.back_office.loadbalancer.server.scheme=http"
 
@@ -94,7 +102,9 @@ services:
     networks:
       - app_network
     volumes:
-      - "tiagocode_postgres:/var/lib/postgresql/data"
+      - "tiagocode_postgres:/var/lib/postgres l/data"
+    profiles:
+      - enabled
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
