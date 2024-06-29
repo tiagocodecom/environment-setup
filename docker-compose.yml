@@ -56,7 +56,8 @@ services:
       - ./docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     profiles:
-      - enabled
+      - development
+      - production
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=web_secure"
@@ -80,7 +81,8 @@ services:
     networks:
       - app_network
     profiles:
-      - enabled
+      - development
+      - production
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.back_office.entrypoints=web_secure"
@@ -105,7 +107,8 @@ services:
     volumes:
       - "tiagocode_postgres:/var/lib/postgres l/data"
     profiles:
-      - enabled
+      - development
+      - production
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
@@ -113,9 +116,35 @@ services:
       - "traefik.tcp.routers.postgres.entryPoints=postgres"
       - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
 
+  pgadmin:
+    build: 
+      context: ./docker/pgadmin
+      dockerfile: Dockerfile
+      args:
+        - PGADMIN_VERSION=${SERVICE_PGADMIN_VERSION}
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${SERVICE_PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${SERVICE_PGADMIN_PASSWORD}
+    volumes:
+      - tiagocode_pgadmin:/var/lig/pgadmin
+    profiles:
+      - development
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pgadmin.entrypoints=web_secure"
+      - "traefik.http.routers.pgadmin.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.pgadmin.rule=Host(`${APPS_ENVIRONMENT}-db.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+      - "traefik.http.services.pgadmin.loadbalancer.server.scheme=http"
+
 volumes:
   tiagocode_postgres:
     driver: ${DOCKER_VOLUMES_DRIVER}
   
   tiagocode_back_office:
     driver: ${DOCKER_VOLUMES_DRIVER}
+
+  tiagocode_pgadmin:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+  

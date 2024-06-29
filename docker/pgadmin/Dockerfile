@@ -1,10 +1,8 @@
-ARG POSTGRES_VERSION="16-alpine3.20"
+ARG PGADMIN_VERSION=latest
 
-FROM postgres:${POSTGRES_VERSION}
+FROM dpage/pgadmin4:${PGADMIN_VERSION}
 
 LABEL author="Tiagocode <santiagomm1997@gmail.com>"
 LABEL mantainer="Tiagocode <santiagomm1997@gmail.com>"
 
-CMD ["postgres"]
-
-EXPOSE 5432
+EXPOSE 80
