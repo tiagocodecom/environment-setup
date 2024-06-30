@@ -3,10 +3,16 @@ networks:
     driver: ${DOCKER_NETWORKS_DRIVER}
 
 volumes:
-  tiagocode_postgres:
+  postgres_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
 
-  tiagocode_pgadmin:
+  pgadmin_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  redis_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  portainer_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
   
 services:
@@ -32,12 +38,11 @@ services:
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
       - "--entrypoints.postgres.address=:5432"
-      - "--entrypoints.traefik.address=:8080"
       - "--entrypoints.redis.address=:6379"
       # middleware for redirecting traffic to https
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
+      # - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
+      # - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
+      # - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
       # tls
       - "--entrypoints.web_secure.http.tls.domains[0].main=${APPS_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${APPS_DOMAIN_NAME}"
@@ -56,7 +61,6 @@ services:
       - "443:443"
       - "5432:5432"
       - "6379:6379"
-      - "8080:8080"
     networks:
       - app_network
     volumes:
@@ -72,33 +76,9 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`${APPS_ENVIRONMENT}-traefik.${APPS_DOMAIN_NAME}`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
-      # - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
-      # - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}"
-      # - "traefik.http.routers.traefik.middlewares=access-auth"
-
-  back-office:
-    build: 
-      context: ./docker/back-office
-      dockerfile: Dockerfile
-      args:
-        - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
-        - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
-    environment:
-      - RUST_VERSION=${SERVICE_RUST_VERSION}
-    networks:
-      - app_network
-    volumes:
-      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/app
-    profiles:
-      - development
-      - production
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.back_office.entrypoints=web_secure"
-      - "traefik.http.routers.back_office.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.back_office.rule=Host(`${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}`)"
-      - "traefik.http.services.back_office.loadbalancer.server.port=8080"
-      - "traefik.http.services.back_office.loadbalancer.server.scheme=http"
+      - "traefik.http.routers.traefik.middlewares=access-auth"
+      - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
+      - "traefik.http.middlewares.access-auth.basicauth.users=${SERVICE_TRAEFIK_USER_PASSWORD}"      
 
   postgres:
     restart: unless-stopped
@@ -114,7 +94,7 @@ services:
     networks:
       - app_network
     volumes:
-      - "tiagocode_postgres:/var/lib/postgres l/data"
+      - "postgres_data:/var/lib/postgres l/data"
     profiles:
       - development
       - production
@@ -124,6 +104,27 @@ services:
       - "traefik.tcp.routers.postgres.service=postgres"
       - "traefik.tcp.routers.postgres.entryPoints=postgres"
       - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+
+  redis:
+    build:
+      context: ./docker/redis
+      args:
+        - REDIS_VERSION=${SERVICE_REDIS_VERSION}
+    command: --requirepass ${SERVICE_REDIS_PASSWORD}
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - redis_data:/data
+    profiles:
+      - development
+      - production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.redis.service=redis"
+      - "traefik.tcp.routers.redis.entryPoints=redis"
+      - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
 
   pgadmin:
     build: 
@@ -137,13 +138,91 @@ services:
       - PGADMIN_DEFAULT_EMAIL=${SERVICE_PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${SERVICE_PGADMIN_PASSWORD}
     volumes:
-      - tiagocode_pgadmin:/var/lig/pgadmin
+      - pgadmin_data:/var/lig/pgadmin
+    networks:
+      - app_network
     profiles:
       - development
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pgadmin.entrypoints=web_secure"
       - "traefik.http.routers.pgadmin.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.pgadmin.rule=Host(`${APPS_ENVIRONMENT}-db.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.routers.pgadmin.rule=Host(`${APPS_ENVIRONMENT}-pgadmin.${APPS_DOMAIN_NAME}`)"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
       - "traefik.http.services.pgadmin.loadbalancer.server.scheme=http"
+
+  redis-webui:
+    build: 
+      context: ./docker/redis-webui
+      args:
+        - REDIS_WEBUI_VERSION=${SERVICE_REDIS_WEBUI_VERSION}
+    environment:
+      - REDIS_1_HOST=redis
+      - REDIS_1_PORT=6379
+      - REDIS_1_AUTH=${SERVICE_REDIS_PASSWORD}
+      - ADMIN_USER=${SERVICE_REDIS_WEBUI_EMAIL}
+      - ADMIN_PASS=${SERVICE_REDIS_WEBUI_PASSWORD}
+    networks:
+      - app_network
+    profiles:
+      - development
+    depends_on:
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webui.entrypoints=web_secure"
+      - "traefik.http.routers.webui.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.webui.rule=Host(`${APPS_ENVIRONMENT}-webui.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.services.webui.loadbalancer.server.port=80"
+      - "traefik.http.services.webui.loadbalancer.server.scheme=http"
+
+  portainer:
+    build:
+      context: ./docker/portainer
+      args:
+        - PORTAINER_VERSION=${SERVICE_PORTAINER_VERSION}
+    extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+    networks:
+      - app_network
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.entrypoints=web_secure"
+      - "traefik.http.routers.portainer.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.portainer.rule=Host(`${APPS_ENVIRONMENT}-portainer.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "traefik.http.services.portainer.loadbalancer.server.scheme=http"
+
+  back-office:
+    build: 
+      context: ./docker/back-office
+      dockerfile: Dockerfile
+      args:
+        - RUST_VERSION=${SERVICE_RUST_VERSION}
+        - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
+        - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
+    networks:
+      - app_network
+    volumes:
+      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/app
+    profiles:
+      - development
+      - production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.back_office.entrypoints=web_secure"
+      - "traefik.http.routers.back_office.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.back_office.rule=Host(`${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.services.back_office.loadbalancer.server.port=8080"
+      - "traefik.http.services.back_office.loadbalancer.server.scheme=http"
+
+  #website:
+    # build:
+    #   context: ./docker/website
+    #   dockerfile: Dockerfile
+    #   args:
+    #     - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
+    #     - WEBSITE_VERSION=${APP_WEBSITE_VERSION}
