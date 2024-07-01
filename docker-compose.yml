@@ -18,7 +18,7 @@ volumes:
 services:
   traefik:
     build:
-      context: ./docker/traefik
+      context: ./.docker/traefik
       dockerfile: Dockerfile
       args:
         - TRAEFIK_VERSION=${SERVICE_TRAEFIK_VERSION}
@@ -64,7 +64,7 @@ services:
     networks:
       - app_network
     volumes:
-      - ./docker/traefik/data:/data
+      - ./.docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     profiles:
       - development
@@ -83,7 +83,7 @@ services:
   postgres:
     restart: unless-stopped
     build:
-      context: ./docker/postgres
+      context: ./.docker/postgres
       dockerfile: Dockerfile
       args:
         - POSTGRES_VERSION=${SERVICE_POSTGRES_VERSION}
@@ -107,7 +107,7 @@ services:
 
   redis:
     build:
-      context: ./docker/redis
+      context: ./.docker/redis
       args:
         - REDIS_VERSION=${SERVICE_REDIS_VERSION}
     command: --requirepass ${SERVICE_REDIS_PASSWORD}
@@ -128,7 +128,7 @@ services:
 
   pgadmin:
     build: 
-      context: ./docker/pgadmin
+      context: ./.docker/pgadmin
       dockerfile: Dockerfile
       args:
         - PGADMIN_VERSION=${SERVICE_PGADMIN_VERSION}
@@ -153,7 +153,7 @@ services:
 
   redis-webui:
     build: 
-      context: ./docker/redis-webui
+      context: ./.docker/redis-webui
       args:
         - REDIS_WEBUI_VERSION=${SERVICE_REDIS_WEBUI_VERSION}
     environment:
@@ -178,7 +178,7 @@ services:
 
   portainer:
     build:
-      context: ./docker/portainer
+      context: ./.docker/portainer
       args:
         - PORTAINER_VERSION=${SERVICE_PORTAINER_VERSION}
     extra_hosts:
@@ -198,7 +198,7 @@ services:
 
   back-office:
     build: 
-      context: ./docker/back-office
+      context: ./.docker/back-office
       dockerfile: Dockerfile
       args:
         - RUST_VERSION=${SERVICE_RUST_VERSION}
@@ -221,7 +221,7 @@ services:
 
   website:
     build:
-      context: ./docker/website
+      context: ./.docker/website
       args:
         - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
         - WEBSITE_VERSION=${APP_WEBSITE_VERSION}
