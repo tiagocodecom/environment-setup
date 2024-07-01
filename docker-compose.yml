@@ -94,7 +94,7 @@ services:
     networks:
       - app_network
     volumes:
-      - "postgres_data:/var/lib/postgres l/data"
+      - "postgres_data:/var/lib/postgresql/data"
     profiles:
       - development
       - production
@@ -219,10 +219,23 @@ services:
       - "traefik.http.services.back_office.loadbalancer.server.port=8080"
       - "traefik.http.services.back_office.loadbalancer.server.scheme=http"
 
-  #website:
-    # build:
-    #   context: ./docker/website
-    #   dockerfile: Dockerfile
-    #   args:
-    #     - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
-    #     - WEBSITE_VERSION=${APP_WEBSITE_VERSION}
+  website:
+    build:
+      context: ./docker/website
+      args:
+        - CONTAINER_REGISTRY=${APPS_CONTAINER_REGISTRY}
+        - WEBSITE_VERSION=${APP_WEBSITE_VERSION}
+    networks:
+      - app_network
+    volumes:
+      - ${APP_WEBSITE_PATH_IN_HOST}:/var/www/app
+    profiles:
+      - development
+      - production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website.entrypoints=web_secure"
+      - "traefik.http.routers.website.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.website.rule=Host(`${APPS_ENVIRONMENT}-website.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.services.website.loadbalancer.server.port=3000"
+      - "traefik.http.services.website.loadbalancer.server.scheme=http"
