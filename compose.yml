@@ -45,8 +45,8 @@ services:
       - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
       # tls
-      - "--entrypoints.web_secure.http.tls.domains[0].main=${APPS_DOMAIN_NAME}"
-      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${APPS_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
       - "--certificatesresolvers.lets_encrypt.acme.storage=/acme.json"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
@@ -72,7 +72,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=web_secure"
       - "traefik.http.routers.traefik.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.traefik.rule=Host(`${APPS_ENVIRONMENT}-traefik.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}traefik.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
       - "traefik.http.routers.traefik.middlewares=access-auth"
@@ -132,8 +132,8 @@ services:
       dockerfile: Dockerfile
       args:
         - PHP_VERSION=${SERVICE_PHP_VERSION}
-        - CONTAINER_REGISTRY_URL=${APPS_CONTAINER_REGISTRY}
         - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
+        - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
     depends_on:
       - postgres
       - redis
@@ -143,7 +143,7 @@ services:
       # By default xdebug extension also disabled.
       PHP_EXTENSIONS_DISABLE: xhprof,spx
       PHP_MAIL_MIXED_LF_AND_CRLF: 'On'
-      DRUSH_OPTIONS_URI: "http://${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}"
+      DRUSH_OPTIONS_URI: "https://${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}"
     volumes:
       - codebase_data:/var/www/html:cached
 
@@ -170,5 +170,5 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.entrypoints=web_secure"
       - "traefik.http.routers.nginx.tls.certresolver=lets_encrypt"
-      - "traefik.http.routers.nginx.rule=Host(`${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}`)"
+      - "traefik.http.routers.nginx.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
