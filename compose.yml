@@ -1,5 +1,7 @@
 networks:
-  app_network:
+  frontend_network:
+    driver: ${DOCKER_NETWORKS_DRIVER}
+  backend_network:
     driver: ${DOCKER_NETWORKS_DRIVER}
 
 volumes:
@@ -9,16 +11,18 @@ volumes:
   redis_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
 
+  codebase_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
   
 services:
-  
   traefik:
+    restart: always
     build:
       context: ./.docker/traefik
       dockerfile: Dockerfile
       args:
         - TRAEFIK_VERSION=${SERVICE_TRAEFIK_VERSION}
-    restart: unless-stopped
     environment:
       - CF_API_EMAIL=${SERVICE_TRAEFIK_CF_EMAIL}
       - CF_API_KEY=${SERVICE_TRAEFIK_CF_API_KEY}
@@ -59,13 +63,11 @@ services:
       - "5432:5432"
       - "6379:6379"
     networks:
-      - app_network
+      - frontend_network
+      - backend_network
     volumes:
       - ./.docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
-    profiles:
-      - development
-      - production
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=web_secure"
@@ -78,23 +80,26 @@ services:
       - "traefik.http.middlewares.access-auth.basicauth.users=${SERVICE_TRAEFIK_USER_PASSWORD}"      
 
   postgres:
-    restart: unless-stopped
+    restart: always
     build:
       context: ./.docker/postgres
       dockerfile: Dockerfile
       args:
         - POSTGRES_VERSION=${SERVICE_POSTGRES_VERSION}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_POSTGRES_USER} -d ${SERVICE_POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
     environment:
       - POSTGRES_DB=${SERVICE_POSTGRES_DB}
       - POSTGRES_USER=${SERVICE_POSTGRES_USER}
       - POSTGRES_PASSWORD=${SERVICE_POSTGRES_PASSWORD}
     networks:
-      - app_network
+      - backend_network
     volumes:
       - "postgres_data:/var/lib/postgresql/data"
-    profiles:
-      - development
-      - production
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
@@ -103,19 +108,16 @@ services:
       - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
 
   redis:
+    restart: always
     build:
       context: ./.docker/redis
       args:
         - REDIS_VERSION=${SERVICE_REDIS_VERSION}
     command: --requirepass ${SERVICE_REDIS_PASSWORD}
-    restart: unless-stopped
     networks:
-      - app_network
+      - backend_network
     volumes:
       - redis_data:/data
-    profiles:
-      - development
-      - production
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
@@ -124,39 +126,38 @@ services:
       - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
 
   php: 
+    restart: always
     build:
-      context: ./.docker/drupal-php
+      context: ./.docker/php
       dockerfile: Dockerfile
       args:
         - PHP_VERSION=${SERVICE_PHP_VERSION}
-    restart: unless-stopped
+        - CONTAINER_REGISTRY_URL=${APPS_CONTAINER_REGISTRY}
+        - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
+    depends_on:
+      - postgres
+      - redis
     networks:
-      - app_network
-    profiles:
-      - development
-      - production
+      - backend_network
     environment:
       # By default xdebug extension also disabled.
       PHP_EXTENSIONS_DISABLE: xhprof,spx
       PHP_MAIL_MIXED_LF_AND_CRLF: 'On'
       DRUSH_OPTIONS_URI: "http://${APPS_ENVIRONMENT}-admin.${APPS_DOMAIN_NAME}"
     volumes:
-      - $APP_BACK_OFFICE_PATH_IN_HOST:/var/www/html:cached
+      - codebase_data:/var/www/html:cached
 
   nginx:
+    restart: always
     build:
       context: ./.docker/nginx
       dockerfile: Dockerfile
       args:
         - NGINX_VERSION=${SERVICE_NGINX_VERSION}
-    restart: unless-stopped
     depends_on:
       - php
     networks:
-      - app_network
-    profiles:
-      - development
-      - production
+      - backend_network
     environment:
       NGINX_STATIC_OPEN_FILE_CACHE: "off"
       NGINX_ERROR_LOG_LEVEL: debug
@@ -164,7 +165,7 @@ services:
       NGINX_SERVER_ROOT: /var/www/html/web
       NGINX_VHOST_PRESET: $SERVICE_NGINX_VHOST_PRESET
     volumes:
-      - $APP_BACK_OFFICE_PATH_IN_HOST:/var/www/html:cached
+      - codebase_data:/var/www/html:cached
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.entrypoints=web_secure"
