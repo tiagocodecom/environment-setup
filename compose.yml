@@ -1,0 +1,182 @@
+networks:
+  frontend_network:
+    driver: ${DOCKER_NETWORKS_DRIVER}
+  backend_network:
+    driver: ${DOCKER_NETWORKS_DRIVER}
+
+volumes:
+  postgres_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  redis_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  codebase_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+  
+services:
+  traefik:
+    build:
+      context: ./docker/traefik
+      dockerfile: Dockerfile
+      args:
+        - TRAEFIK_VERSION=${TRAEFIK_VERSION}
+    environment:
+      - CF_API_EMAIL=${TRAEFIK_CF_EMAIL}
+      - CF_API_KEY=${TRAEFIK_CF_API_KEY}
+    command:
+      # log/
+      - "--log.level=debug"
+      # api
+      - "--api"
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      # providers
+      - "--providers.docker.exposedbydefault=false"
+      # entrypoints
+      - "--entrypoints.web_insecure.address=:80"
+      - "--entrypoints.web_secure.address=:443"
+      - "--entrypoints.postgres.address=:5432"
+      - "--entrypoints.redis.address=:6379"
+      # middleware for redirecting traffic to https
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
+      # tls
+      - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
+      - "--certificatesresolvers.lets_encrypt.acme.storage=/data/acme.json"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.provider=cloudflare"
+      - "--certificatesresolvers.lets_encrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${TRAEFIK_CF_DNS}"
+      # the following line is the caserver for testing the certificates generating (comment it for prod)
+      # - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      # accesslogb
+      - "--accesslog.filepath=/data/access.log"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "5432:5432"
+      - "6379:6379"
+    networks:
+      - frontend_network
+      - backend_network
+    volumes:
+      - ./docker/traefik/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=web_secure"
+      - "traefik.http.routers.traefik.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.traefik.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}traefik.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
+      - "traefik.http.routers.traefik.middlewares=access-auth"
+      - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
+      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_USER_PASSWORD}"      
+
+  postgres:
+    restart: always
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend_network
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+      - "./docker/postgres/initdb.d:/docker-entrypoint-initdb.d"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.postgres.service=postgres"
+      - "traefik.tcp.routers.postgres.entryPoints=postgres"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+
+  redis:
+    restart: always
+    build:
+      context: ./docker/redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    command: --requirepass ${REDIS_PASSWORD}
+    networks:
+      - backend_network
+    volumes:
+      - redis_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.redis.service=redis"
+      - "traefik.tcp.routers.redis.entryPoints=redis"
+      - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
+
+  back-office: 
+    restart: always
+    build:
+      context: ./docker/back-office
+      dockerfile: Dockerfile
+      args:
+        - APP_NAME=${PROJECT_NAME}
+        - BASE_IMAGE_TAG=${BACK_OFFICE_PHP_VERSION}
+        - DRUPAL_VER=${BACK_OFFICE_DRUPAL_VERSION}
+    environment:
+      # Database environment variables
+      DRUPAL_DB_DRIVER: $BACK_OFFICE_DB_DRIVER
+      DRUPAL_DB_HOST: $BACK_OFFICE_DB_HOST
+      DRUPAL_DB_PREFIX: $BACK_OFFICE_DB_PREFIX
+      DRUPAL_DB_NAME: $POSTGRES_DB
+      DRUPAL_DB_USER: $POSTGRES_USER
+      DRUPAL_DB_PASSWORD: $POSTGRES_PASSWORD
+      DRUPAL_HASH_SALT: $BACK_OFFICE_HASH_SALT
+      DRUPAL_SLD: $PROJECT_SECOND_LEVEL_DOMAIN
+      # Config environment vars
+      DRUPAL_CONFIG_SYNC_PATH: $BACK_OFFICE_CONFIG_SYNC_CONTAINER_PATH
+      DRUPAL_PRIVATE_FILES_PATH: $BACK_OFFICE_PRIVATE_FILE_CONTAINER_PATH
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend_network
+    volumes:
+      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
+
+  nginx:
+    restart: always
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+      args:
+        - NGINX_VERSION=${NGINX_VERSION}
+    environment:
+      NGINX_STATIC_OPEN_FILE_CACHE: "off"
+      NGINX_ERROR_LOG_LEVEL: debug
+      NGINX_BACKEND_HOST: back-office
+      NGINX_SERVER_ROOT: /var/www/html/web
+      NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
+    depends_on:
+      - back-office
+    networks:
+      - backend_network
+    volumes:
+      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.entrypoints=web_secure"
+      - "traefik.http.routers.nginx.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.nginx.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.services.nginx.loadbalancer.server.port=80"
+ 

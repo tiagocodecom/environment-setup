@@ -14,25 +14,25 @@ This repository provides everything necessary to effortlessly establish a fully 
     ```conf
     APPS_DOMAIN_NAME=example.com
 
-    APP_BACK_OFFICE_PATH_IN_HOST=./code/back-office
-    APP_WEBSITE_PATH_IN_HOST=./code/website
+    BACK_OFFICE_PATH_IN_HOST=./code/back-office
+    WEBSITE_PATH_IN_HOST=./code/website
 
-    SERVICE_POSTGRES_DB=database_name
-    SERVICE_POSTGRES_USER=database_user
-    SERVICE_POSTGRES_PASSWORD=database_password
+    POSTGRES_DB=database_name
+    POSTGRES_USER=database_user
+    POSTGRES_PASSWORD=database_password
 
-    SERVICE_TRAEFIK_ACME_EMAIL=cloudflare_email
-    SERVICE_TRAEFIK_CF_EMAIL=cloudflare_email
-    SERVICE_TRAEFIK_CF_API_KEY=cloudflare_api_token
-    SERVICE_TRAEFIK_USER_PASSWORD=traefik_user:traefik_password_scaped
+    TRAEFIK_ACME_EMAIL=cloudflare_email
+    TRAEFIK_CF_EMAIL=cloudflare_email
+    TRAEFIK_CF_API_KEY=cloudflare_api_token
+    TRAEFIK_USER_PASSWORD=traefik_user:traefik_password_scaped
 
-    SERVICE_PGADMIN_EMAIL=pgadmin_email
-    SERVICE_PGADMIN_PASSWORD=pgadmin_password
+    PGADMIN_EMAIL=pgadmin_email
+    PGADMIN_PASSWORD=pgadmin_password
 
-    SERVICE_REDIS_PASSWORD=redis_password
+    REDIS_PASSWORD=redis_password
 
-    SERVICE_REDIS_WEBUI_EMAIL=redis_webui_email
-    SERVICE_REDIS_WEBUI_PASSWORD=redis_webui_password
+    REDIS_WEBUI_EMAIL=redis_webui_email
+    REDIS_WEBUI_PASSWORD=redis_webui_password
     ```
 
 4. Build the containers `make build`.
