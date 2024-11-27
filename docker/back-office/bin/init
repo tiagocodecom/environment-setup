@@ -13,16 +13,17 @@ if [[ ! -f "${APP_ROOT}/web/index.php" ]]; then
     echo "${APP_NAME} not found in ${APP_ROOT} - copying now..."
     rsync -a "${src_dir}/" "${APP_ROOT}/"
     echo "Complete! ${APP_NAME} has been successfully copied to ${APP_ROOT}"
-
-    if [[ -z "${WODBY_APP_NAME}" ]]; then
-        hash_salt=$(openssl rand -base64 12)
-        export DRUPAL_HASH_SALT="${hash_salt}"
-        su-exec www-data mkdir -p "${FILES_DIR}/config/sync_dir"
-        su-exec wodby gotpl /etc/gotpl/settings.php.tmpl >> "${APP_ROOT}/web/sites/default/settings.php"
-        echo "Complete! settings.php has been successfully created"
-    fi
 else
     echo "${APP_NAME} already exists in ${APP_ROOT} - skipping copy..."
+fi
+
+if [[ -z "${WODBY_APP_NAME}" ]]; then
+    hash_salt=$(openssl rand -base64 12)
+    export DRUPAL_HASH_SALT="${hash_salt}"
+    su-exec wodby cp -f "${APP_ROOT}/web/sites/default/default.settings.php" "${APP_ROOT}/web/sites/default/settings.php"
+    su-exec www-data mkdir -p "${FILES_DIR}/config/sync_dir"
+    su-exec wodby gotpl /etc/gotpl/settings.php.tmpl >> "${APP_ROOT}/web/sites/default/settings.php"
+    echo "Complete! settings.php has been successfully created"
 fi
 
 git config --global --add safe.directory /var/www/html

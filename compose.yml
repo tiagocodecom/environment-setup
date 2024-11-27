@@ -130,6 +130,7 @@ services:
       context: ./docker/back-office
       dockerfile: Dockerfile
       args:
+        - APP_NAME=${PROJECT_NAME}
         - BASE_IMAGE_TAG=${BACK_OFFICE_PHP_VERSION}
         - DRUPAL_VER=${BACK_OFFICE_DRUPAL_VERSION}
     environment:
@@ -143,7 +144,8 @@ services:
       DRUPAL_HASH_SALT: $BACK_OFFICE_HASH_SALT
       DRUPAL_SLD: $PROJECT_SECOND_LEVEL_DOMAIN
       # Config environment vars
-      DRUPAL_CONFIG_SYNC_DIRECTORY: $BACK_OFFICE_CONFIG_CONTAINER_PATH
+      DRUPAL_CONFIG_SYNC_PATH: $BACK_OFFICE_CONFIG_SYNC_CONTAINER_PATH
+      DRUPAL_PRIVATE_FILES_PATH: $BACK_OFFICE_PRIVATE_FILE_CONTAINER_PATH
     depends_on:
       - postgres
       - redis

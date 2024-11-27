@@ -10,10 +10,11 @@ LABEL mantainer="Tiagocode <santiagomm1997@gmail.com>"
 FROM wodby/drupal-php:${PHP_VERSION}
 
 ARG DRUPAL_VER
+ARG APP_NAME
 
 ENV DRUPAL_VER="${DRUPAL_VER}" \
     DOCROOT_SUBDIR="web" \
-    APP_NAME="Drupal 11"
+    APP_NAME=${APP_NAME}
 
 USER root
 
@@ -22,13 +23,13 @@ RUN set -ex; \
     mkdir -p /usr/src/drupal; \
     chown wodby:wodby -R /usr/src;
 
-COPY --chown=wodby:root --chmod=777 --from=back-office /var/www /usr/src/drupal
+COPY --chown=root:root --chmod=777 --from=back-office /var/www /usr/src/drupal
 
 RUN set -ex; \
     cd /usr/src/drupal; \
     cp web/sites/default/default.settings.php web/sites/default/settings.php; \
     mkdir -p web/sites/default/files; \
-    chmod 777 web/sites/default/files; \
+    chmod 777 -R web/sites/default/files; \
     chown wodby:wodby web/sites/default/settings.php web/sites/default/files; \
     if [[ -z "${PHP_DEV}" ]]; then \
         echo "$(cat /etc/sudoers.d/wodby), /usr/local/bin/init" > /etc/sudoers.d/wodby; \
