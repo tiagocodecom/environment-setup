@@ -1,4 +1,0 @@
-services:
-  php:
-    volumes:
-      - ./code/back-office:/var/www/html

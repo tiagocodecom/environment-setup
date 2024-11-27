@@ -13,13 +13,11 @@ volumes:
 
   codebase_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
-
   
 services:
   traefik:
-    restart: always
     build:
-      context: ./.docker/traefik
+      context: ./docker/traefik
       dockerfile: Dockerfile
       args:
         - TRAEFIK_VERSION=${SERVICE_TRAEFIK_VERSION}
@@ -47,14 +45,14 @@ services:
       # tls
       - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
-      - "--certificatesresolvers.lets_encrypt.acme.storage=/acme.json"
+      - "--certificatesresolvers.lets_encrypt.acme.storage=/data/acme.json"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.provider=cloudflare"
       - "--certificatesresolvers.lets_encrypt.acme.email=${SERVICE_TRAEFIK_ACME_EMAIL}"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${SERVICE_TRAEFIK_CF_DNS}"
       # the following line is the caserver for testing the certificates generating (comment it for prod)
-      # - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # accesslogb
       - "--accesslog.filepath=/data/access.log"
     ports:
@@ -66,7 +64,7 @@ services:
       - frontend_network
       - backend_network
     volumes:
-      - ./.docker/traefik/data:/data
+      - ./docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
@@ -82,7 +80,7 @@ services:
   postgres:
     restart: always
     build:
-      context: ./.docker/postgres
+      context: ./docker/postgres
       dockerfile: Dockerfile
       args:
         - POSTGRES_VERSION=${SERVICE_POSTGRES_VERSION}
@@ -100,6 +98,7 @@ services:
       - backend_network
     volumes:
       - "postgres_data:/var/lib/postgresql/data"
+      - "./docker/postgres/initdb.d:/docker-entrypoint-initdb.d"
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
@@ -110,7 +109,7 @@ services:
   redis:
     restart: always
     build:
-      context: ./.docker/redis
+      context: ./docker/redis
       args:
         - REDIS_VERSION=${SERVICE_REDIS_VERSION}
     command: --requirepass ${SERVICE_REDIS_PASSWORD}
@@ -125,47 +124,51 @@ services:
       - "traefik.tcp.routers.redis.entryPoints=redis"
       - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
 
-  php: 
+  back-office: 
     restart: always
     build:
-      context: ./.docker/php
+      context: ./docker/back-office
       dockerfile: Dockerfile
       args:
-        - PHP_VERSION=${SERVICE_PHP_VERSION}
-        - BACK_OFFICE_VERSION=${APP_BACK_OFFICE_VERSION}
-        - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
+        - BASE_IMAGE_TAG=${SERVICE_PHP_VERSION}
+        - DRUPAL_VER=${SERVICE_DRUPAL_VERSION}
+    environment:
+      DB_HOST: $APP_BACK_OFFICE_DB_HOST
+      DB_NAME: $SERVICE_POSTGRES_DB
+      DB_USER: $SERVICE_POSTGRES_USER
+      DB_PASSWORD: $SERVICE_POSTGRES_PASSWORD
+      DB_DRIVER: $APP_BACK_OFFICE_DB_DRIVER
+      DB_PREFIX: $APP_BACK_OFFICE_DB_PREFIX
+      DRUPAL_HASH_SALT: $APP_BACK_OFFICE_HASH_SALT
+      CONFIG_SYNC_DIRECTORY: $APP_BACK_OFFICE_CONFIG_SYNC_DIRECTORY
     depends_on:
       - postgres
       - redis
     networks:
       - backend_network
-    environment:
-      # By default xdebug extension also disabled.
-      PHP_EXTENSIONS_DISABLE: xhprof,spx
-      PHP_MAIL_MIXED_LF_AND_CRLF: 'On'
-      DRUSH_OPTIONS_URI: "https://${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}"
     volumes:
-      - codebase_data:/var/www/html:cached
+      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/html:cached
+
 
   nginx:
     restart: always
     build:
-      context: ./.docker/nginx
+      context: ./docker/nginx
       dockerfile: Dockerfile
       args:
         - NGINX_VERSION=${SERVICE_NGINX_VERSION}
-    depends_on:
-      - php
-    networks:
-      - backend_network
     environment:
       NGINX_STATIC_OPEN_FILE_CACHE: "off"
       NGINX_ERROR_LOG_LEVEL: debug
-      NGINX_BACKEND_HOST: php
+      NGINX_BACKEND_HOST: back-office
       NGINX_SERVER_ROOT: /var/www/html/web
       NGINX_VHOST_PRESET: $SERVICE_NGINX_VHOST_PRESET
+    depends_on:
+      - back-office
+    networks:
+      - backend_network
     volumes:
-      - codebase_data:/var/www/html:cached
+      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/html:cached
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.entrypoints=web_secure"
