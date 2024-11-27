@@ -20,10 +20,10 @@ services:
       context: ./docker/traefik
       dockerfile: Dockerfile
       args:
-        - TRAEFIK_VERSION=${SERVICE_TRAEFIK_VERSION}
+        - TRAEFIK_VERSION=${TRAEFIK_VERSION}
     environment:
-      - CF_API_EMAIL=${SERVICE_TRAEFIK_CF_EMAIL}
-      - CF_API_KEY=${SERVICE_TRAEFIK_CF_API_KEY}
+      - CF_API_EMAIL=${TRAEFIK_CF_EMAIL}
+      - CF_API_KEY=${TRAEFIK_CF_API_KEY}
     command:
       # log/
       - "--log.level=debug"
@@ -49,10 +49,10 @@ services:
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.provider=cloudflare"
-      - "--certificatesresolvers.lets_encrypt.acme.email=${SERVICE_TRAEFIK_ACME_EMAIL}"
-      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${SERVICE_TRAEFIK_CF_DNS}"
+      - "--certificatesresolvers.lets_encrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${TRAEFIK_CF_DNS}"
       # the following line is the caserver for testing the certificates generating (comment it for prod)
-      - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      # - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # accesslogb
       - "--accesslog.filepath=/data/access.log"
     ports:
@@ -75,7 +75,7 @@ services:
       - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
       - "traefik.http.routers.traefik.middlewares=access-auth"
       - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
-      - "traefik.http.middlewares.access-auth.basicauth.users=${SERVICE_TRAEFIK_USER_PASSWORD}"      
+      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_USER_PASSWORD}"      
 
   postgres:
     restart: always
@@ -83,17 +83,17 @@ services:
       context: ./docker/postgres
       dockerfile: Dockerfile
       args:
-        - POSTGRES_VERSION=${SERVICE_POSTGRES_VERSION}
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_POSTGRES_USER} -d ${SERVICE_POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 5s
     environment:
-      - POSTGRES_DB=${SERVICE_POSTGRES_DB}
-      - POSTGRES_USER=${SERVICE_POSTGRES_USER}
-      - POSTGRES_PASSWORD=${SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - backend_network
     volumes:
@@ -111,8 +111,8 @@ services:
     build:
       context: ./docker/redis
       args:
-        - REDIS_VERSION=${SERVICE_REDIS_VERSION}
-    command: --requirepass ${SERVICE_REDIS_PASSWORD}
+        - REDIS_VERSION=${REDIS_VERSION}
+    command: --requirepass ${REDIS_PASSWORD}
     networks:
       - backend_network
     volumes:
@@ -130,25 +130,27 @@ services:
       context: ./docker/back-office
       dockerfile: Dockerfile
       args:
-        - BASE_IMAGE_TAG=${SERVICE_PHP_VERSION}
-        - DRUPAL_VER=${SERVICE_DRUPAL_VERSION}
+        - BASE_IMAGE_TAG=${BACK_OFFICE_PHP_VERSION}
+        - DRUPAL_VER=${BACK_OFFICE_DRUPAL_VERSION}
     environment:
-      DB_HOST: $APP_BACK_OFFICE_DB_HOST
-      DB_NAME: $SERVICE_POSTGRES_DB
-      DB_USER: $SERVICE_POSTGRES_USER
-      DB_PASSWORD: $SERVICE_POSTGRES_PASSWORD
-      DB_DRIVER: $APP_BACK_OFFICE_DB_DRIVER
-      DB_PREFIX: $APP_BACK_OFFICE_DB_PREFIX
-      DRUPAL_HASH_SALT: $APP_BACK_OFFICE_HASH_SALT
-      CONFIG_SYNC_DIRECTORY: $APP_BACK_OFFICE_CONFIG_SYNC_DIRECTORY
+      # Database environment variables
+      DRUPAL_DB_DRIVER: $BACK_OFFICE_DB_DRIVER
+      DRUPAL_DB_HOST: $BACK_OFFICE_DB_HOST
+      DRUPAL_DB_PREFIX: $BACK_OFFICE_DB_PREFIX
+      DRUPAL_DB_NAME: $POSTGRES_DB
+      DRUPAL_DB_USER: $POSTGRES_USER
+      DRUPAL_DB_PASSWORD: $POSTGRES_PASSWORD
+      DRUPAL_HASH_SALT: $BACK_OFFICE_HASH_SALT
+      DRUPAL_SLD: $PROJECT_SECOND_LEVEL_DOMAIN
+      # Config environment vars
+      DRUPAL_CONFIG_SYNC_DIRECTORY: $BACK_OFFICE_CONFIG_CONTAINER_PATH
     depends_on:
       - postgres
       - redis
     networks:
       - backend_network
     volumes:
-      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/html:cached
-
+      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
 
   nginx:
     restart: always
@@ -156,22 +158,23 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
       args:
-        - NGINX_VERSION=${SERVICE_NGINX_VERSION}
+        - NGINX_VERSION=${NGINX_VERSION}
     environment:
       NGINX_STATIC_OPEN_FILE_CACHE: "off"
       NGINX_ERROR_LOG_LEVEL: debug
       NGINX_BACKEND_HOST: back-office
       NGINX_SERVER_ROOT: /var/www/html/web
-      NGINX_VHOST_PRESET: $SERVICE_NGINX_VHOST_PRESET
+      NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
     depends_on:
       - back-office
     networks:
       - backend_network
     volumes:
-      - ${APP_BACK_OFFICE_PATH_IN_HOST}:/var/www/html:cached
+      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.entrypoints=web_secure"
       - "traefik.http.routers.nginx.tls.certresolver=lets_encrypt"
       - "traefik.http.routers.nginx.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
+ 
