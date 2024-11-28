@@ -1,15 +1,17 @@
+ARG RUST_VER=latest
 ARG WEBSITE_VERSION=latest
 ARG CONTAINER_REGISTRY_URL=ghcr.io
 
-FROM ${CONTAINER_REGISTRY}/tiagocodecom/website:${WEBSITE_VERSION} AS website
+FROM ${CONTAINER_REGISTRY_URL}/tiagocodecom/website:${WEBSITE_VERSION} AS website
 
 LABEL author="Tiagocode <santiagomm1997@gmail.com>"
 LABEL mantainer="Tiagocode <santiagomm1997@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/tiagocodecom/website"
 
-ARG RUST_VERSION=latest
 
-FROM rust:${RUST_VERSION}
+FROM rust:${RUST_VER}
+
+ENV APP_ROOT=/var/www/html
 
 USER root
 
@@ -21,6 +23,7 @@ RUN set -ex; \
     apk update; \
     apk add --no-cache musl-dev; \
     apk add --no-cache  \
+        rsync \
         openssl  \
         openssh \
         curl  \
@@ -31,7 +34,7 @@ RUN set -ex; \
         libc-dev \
         binaryen;
 
-COPY --chown=root:root --chmod=777 --from=website /usr/src/app /usr/src/app
+COPY --chown=root:root --chmod=777 --from=website /var/www /usr/src/app
 
 RUN set -ex; \
     npm install -g sass; \

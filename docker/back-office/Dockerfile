@@ -10,10 +10,10 @@ LABEL org.opencontainers.image.source="https://github.com/tiagocodecom/back-offi
 
 FROM wodby/drupal-php:${PHP_VERSION}
 
-ARG DRUPAL_VER
 ARG APP_NAME
+ARG DRUPAL_VERSION
 
-ENV DRUPAL_VER="${DRUPAL_VER}" \
+ENV DRUPAL_VER="${DRUPAL_VERSION}" \
     DOCROOT_SUBDIR="web" \
     APP_NAME=${APP_NAME}
 

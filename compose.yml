@@ -131,8 +131,9 @@ services:
       dockerfile: Dockerfile
       args:
         - APP_NAME=${PROJECT_NAME}
-        - DRUPAL_VER=${BACK_OFFICE_DRUPAL_VERSION}
-        - BACK_OFFICE_VERSION=${BACK_OFFICE_PHP_VERSION}
+        - DRUPAL_VERSION=${BACK_OFFICE_DRUPAL_VERSION}
+        - BACK_OFFICE_VERSION=${BACK_OFFICE_VERSION}
+        - PHP_VERSION=${BACK_OFFICE_PHP_VERSION}
         - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
     environment:
       # Database environment variables
@@ -189,12 +190,10 @@ services:
         - RUST_VER=${WEBSITE_RUST_VERSION}
         - WEBSITE_VERSION=${WEBSITE_VERSION}
         - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
-    depends_on:
-      - back-office
     networks:
       - frontend_network
     volumes:
-      - ${BACK_OFFICE_HOST_PATH}:/usr/src/app:cached
+      - ${WEBSITE_PATH_IN_HOST}:/var/www/html:cached
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.website.entrypoints=web_secure"

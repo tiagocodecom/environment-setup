@@ -17,10 +17,9 @@ else
     echo "${APP_NAME} already exists in ${APP_ROOT} - skipping copy..."
 fi
 
-cd /var/www/app || exit
+cd /var/www/html || exit
 
-
-git config --global --add safe.directory /var/www/app
+git config --global --add safe.directory /var/www/html
 echo "Complete! git has been successfully configured"
 
 trunk serve --port 3000 --address 0.0.0.0
