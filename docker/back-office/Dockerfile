@@ -6,6 +6,7 @@ FROM ${CONTAINER_REGISTRY_URL}/tiagocodecom/back-office:${BACK_OFFICE_VERSION} A
 
 LABEL author="Tiagocode <santiagomm1997@gmail.com>"
 LABEL mantainer="Tiagocode <santiagomm1997@gmail.com>"
+LABEL org.opencontainers.image.source="https://github.com/tiagocodecom/back-office"
 
 FROM wodby/drupal-php:${PHP_VERSION}
 
