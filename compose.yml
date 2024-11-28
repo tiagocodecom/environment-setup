@@ -131,8 +131,10 @@ services:
       dockerfile: Dockerfile
       args:
         - APP_NAME=${PROJECT_NAME}
-        - BASE_IMAGE_TAG=${BACK_OFFICE_PHP_VERSION}
-        - DRUPAL_VER=${BACK_OFFICE_DRUPAL_VERSION}
+        - DRUPAL_VERSION=${BACK_OFFICE_DRUPAL_VERSION}
+        - BACK_OFFICE_VERSION=${BACK_OFFICE_VERSION}
+        - PHP_VERSION=${BACK_OFFICE_PHP_VERSION}
+        - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
     environment:
       # Database environment variables
       DRUPAL_DB_DRIVER: $BACK_OFFICE_DB_DRIVER
@@ -180,3 +182,22 @@ services:
       - "traefik.http.routers.nginx.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
  
+  website:
+    build:
+      context: ./docker/website
+      args:
+        - APP_NAME=${PROJECT_NAME}
+        - RUST_VER=${WEBSITE_RUST_VERSION}
+        - WEBSITE_VERSION=${WEBSITE_VERSION}
+        - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
+    networks:
+      - frontend_network
+    volumes:
+      - ${WEBSITE_PATH_IN_HOST}:/var/www/html:cached
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website.entrypoints=web_secure"
+      - "traefik.http.routers.website.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.services.website.loadbalancer.server.port=3000"
+      - "traefik.http.services.website.loadbalancer.server.scheme=http"
