@@ -22,4 +22,4 @@ cd /var/www/html || exit
 git config --global --add safe.directory /var/www/html
 echo "Complete! git has been successfully configured"
 
-trunk serve --port 3000 --address 0.0.0.0
+cargo leptos watch

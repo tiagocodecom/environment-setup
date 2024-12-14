@@ -18,6 +18,12 @@ USER root
 RUN rustup toolchain install nightly
 RUN rustup default nightly
 RUN rustup target add wasm32-unknown-unknown
+RUN rustup component add rustfmt
+RUN rustup component add rustfmt --toolchain nightly
+RUN rustup component add clippy 
+RUN rustup component add clippy --toolchain nightly
+
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN set -ex; \
     apk update; \
@@ -40,7 +46,10 @@ RUN set -ex; \
     npm install -g sass; \
     curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash; \
     cargo binstall -y trunk; \
-    cargo binstall -y cargo-leptos;
+    cargo binstall -y cargo-leptos; \
+    cargo binstall -y leptosfmt; \
+    cargo binstall -y cargo-expand; \
+    cargo binstall -y wasm-bindgen-cli;
 
 RUN set -ex; \
     mkdir -p /var/www/app;
