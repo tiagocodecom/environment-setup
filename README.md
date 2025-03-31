@@ -14,7 +14,7 @@ This repository provides everything necessary to effortlessly establish a fully 
     ```conf
     APPS_DOMAIN_NAME=example.com
 
-    BACK_OFFICE_PATH_IN_HOST=./code/back-office
+    BACKOFFICE_PATH_IN_HOST=./code/backoffice
     WEBSITE_PATH_IN_HOST=./code/website
 
     POSTGRES_DB=database_name

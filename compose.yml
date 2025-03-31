@@ -1,6 +1,4 @@
 networks:
-  frontend_network:
-    driver: ${DOCKER_NETWORKS_DRIVER}
   backend_network:
     driver: ${DOCKER_NETWORKS_DRIVER}
 
@@ -11,7 +9,7 @@ volumes:
   redis_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
 
-  codebase_data:
+  backoffice_codebase:
     driver: ${DOCKER_VOLUMES_DRIVER}
   
 services:
@@ -19,7 +17,6 @@ services:
     restart: always
     build:
       context: ./docker/traefik
-      dockerfile: Dockerfile
       args:
         - TRAEFIK_VERSION=${TRAEFIK_VERSION}
     environment:
@@ -62,7 +59,6 @@ services:
       - "5432:5432"
       - "6379:6379"
     networks:
-      - frontend_network
       - backend_network
     volumes:
       - ./docker/traefik/data:/data
@@ -123,83 +119,69 @@ services:
       - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.redis.service=redis"
       - "traefik.tcp.routers.redis.entryPoints=redis"
-      - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
-
-  back-office: 
-    restart: always
-    build:
-      context: ./docker/back-office
-      dockerfile: Dockerfile
-      args:
-        - APP_NAME=${PROJECT_NAME}
-        - DRUPAL_VERSION=${BACK_OFFICE_DRUPAL_VERSION}
-        - BACK_OFFICE_VERSION=${BACK_OFFICE_VERSION}
-        - PHP_VERSION=${BACK_OFFICE_PHP_VERSION}
-        - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
-    environment:
-      # Database environment variables
-      DRUPAL_DB_DRIVER: $BACK_OFFICE_DB_DRIVER
-      DRUPAL_DB_HOST: $BACK_OFFICE_DB_HOST
-      DRUPAL_DB_PREFIX: $BACK_OFFICE_DB_PREFIX
-      DRUPAL_DB_NAME: $POSTGRES_DB
-      DRUPAL_DB_USER: $POSTGRES_USER
-      DRUPAL_DB_PASSWORD: $POSTGRES_PASSWORD
-      DRUPAL_HASH_SALT: $BACK_OFFICE_HASH_SALT
-      DRUPAL_SLD: $PROJECT_SECOND_LEVEL_DOMAIN
-      # Config environment vars
-      DRUPAL_CONFIG_SYNC_PATH: $BACK_OFFICE_CONFIG_SYNC_CONTAINER_PATH
-      DRUPAL_PRIVATE_FILES_PATH: $BACK_OFFICE_PRIVATE_FILE_CONTAINER_PATH
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - backend_network
-    volumes:
-      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
+      - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
 
   nginx:
     restart: always
     build:
       context: ./docker/nginx
-      dockerfile: Dockerfile
       args:
         - NGINX_VERSION=${NGINX_VERSION}
-    environment:
-      NGINX_STATIC_OPEN_FILE_CACHE: "off"
-      NGINX_ERROR_LOG_LEVEL: debug
-      NGINX_BACKEND_HOST: back-office
-      NGINX_SERVER_ROOT: /var/www/html/web
-      NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
-    depends_on:
-      - back-office
+        - NGINX_PHPFPM_HOST=backoffice
+        - NGINX_SERVER_ROOT=/var/www/html/web
+    volumes:
+      - backoffice_codebase:/var/www/html
+      - ./data/backoffice/files:/var/www/html/web/sites/default/files:cached
     networks:
       - backend_network
-    volumes:
-      - ${BACK_OFFICE_HOST_PATH}:/var/www/html:cached
+    depends_on:
+      - backoffice
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nginx.entrypoints=web_secure"
       - "traefik.http.routers.nginx.tls.certresolver=lets_encrypt"
       - "traefik.http.routers.nginx.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
+
+  backoffice: 
+    restart: always
+    image: $BACKOFFICE_IMAGE:$BACKOFFICE_VERSION
+    environment:
+      PHP_VERSION: $BACKOFFICE_PHP_VERSION
+      DRUPAL_DB_HOST: postgres
+      DRUPAL_SERVER_HOST: nginx
+      DRUPAL_DB_DRIVER: $BACKOFFICE_DB_DRIVER
+      DRUPAL_DB_PREFIX: $BACKOFFICE_DB_PREFIX
+      DRUPAL_DB_NAME: $POSTGRES_DB
+      DRUPAL_DB_USER: $POSTGRES_USER
+      DRUPAL_DB_PASSWORD: $POSTGRES_PASSWORD
+      DRUPAL_HASH_SALT: $BACKOFFICE_HASH_SALT
+      DRUPAL_SLD: $PROJECT_SECOND_LEVEL_DOMAIN
+      DRUPAL_CONFIG_SYNC_PATH: $BACKOFFICE_CONFIG_SYNC_CONTAINER_PATH
+      DRUPAL_PRIVATE_FILES_PATH: $BACKOFFICE_PRIVATE_FILE_CONTAINER_PATH
+      DRUPAL_PUBLIC_FILES_BASE_URL: https://${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}/sites/default/files
+    volumes:
+      - backoffice_codebase:/var/www/html
+      - ./data/backoffice/files:/var/www/html/web/sites/default/files:cached
+    networks:
+      - backend_network
+    depends_on:
+      - postgres
  
-  # website:
-  #   restart: always
-  #   build:
-  #     context: ./docker/website
-  #     args:
-  #       - APP_NAME=${PROJECT_NAME}
-  #       - RUST_VER=${WEBSITE_RUST_VERSION}
-  #       - WEBSITE_VERSION=${WEBSITE_VERSION}
-  #       - CONTAINER_REGISTRY_URL=${PROJECT_CONTAINER_REGISTRY_URL}
-  #   networks:
-  #     - frontend_network
-  #   volumes:
-  #     - ${WEBSITE_PATH_IN_HOST}:/var/www/html:cached
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.website.entrypoints=web_secure"
-  #     - "traefik.http.routers.website.tls.certresolver=lets_encrypt"
-  #     - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`)"
-  #     - "traefik.http.services.website.loadbalancer.server.port=3000"
-  #     - "traefik.http.services.website.loadbalancer.server.scheme=http"
+  website:
+    restart: always
+    image: $WEBSITE_IMAGE:$WEBSITE_VERSION
+    environment:      
+      JSONAPI_BASE_URL: http://nginx
+      JSONAPI_USERNAME: $WEBSITE_JSONAPI_USERNAME
+      JSONAPI_PASSWORD: $WEBSITE_JSONAPI_PASSWORD
+      JSONAPI_IMAGES_URL: $WEBSITE_JSONAPI_IMAGES_URL
+    networks:
+      - backend_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website.entrypoints=web_secure"
+      - "traefik.http.routers.website.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.services.website.loadbalancer.server.port=3000"
+      - "traefik.http.services.website.loadbalancer.server.scheme=http"
