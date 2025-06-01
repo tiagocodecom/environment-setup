@@ -34,12 +34,10 @@ services:
       # entrypoints
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
-      - "--entrypoints.postgres.address=:5432"
-      - "--entrypoints.redis.address=:6379"
       # middleware for redirecting traffic to https
       - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
       - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=true"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=false"
       # tls
       - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
@@ -50,14 +48,12 @@ services:
       - "--certificatesresolvers.lets_encrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
       - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${TRAEFIK_CF_DNS}"
       # the following line is the caserver for testing the certificates generating (comment it for prod)
-      - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      # - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # accesslogb
       - "--accesslog.filepath=/data/access.log"
     ports:
       - "80:80"
       - "443:443"
-      - "5432:5432"
-      - "6379:6379"
     networks:
       - backend_network
     volumes:
