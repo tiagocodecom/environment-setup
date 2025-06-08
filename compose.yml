@@ -28,7 +28,6 @@ services:
       # api
       - "--api"
       - "--api.dashboard=true"
-      #- "--api.insecure=true"
       # providers
       - "--providers.docker.exposedbydefault=false"
       # entrypoints
@@ -92,12 +91,12 @@ services:
     volumes:
       - "postgres_data:/var/lib/postgresql/data"
       - "./docker/postgres/initdb.d:/docker-entrypoint-initdb.d"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.postgres.service=postgres"
-      - "traefik.tcp.routers.postgres.entryPoints=postgres"
-      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
+    #   - "traefik.tcp.routers.postgres.service=postgres"
+    #   - "traefik.tcp.routers.postgres.entryPoints=postgres"
+    #   - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
 
   redis:
     restart: always
@@ -110,12 +109,12 @@ services:
       - backend_network
     volumes:
       - redis_data:/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.redis.service=redis"
-      - "traefik.tcp.routers.redis.entryPoints=redis"
-      - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
+    #   - "traefik.tcp.routers.redis.service=redis"
+    #   - "traefik.tcp.routers.redis.entryPoints=redis"
+    #   - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
 
   nginx:
     restart: always
@@ -144,7 +143,7 @@ services:
     image: $BACKOFFICE_IMAGE:$BACKOFFICE_VERSION
     environment:
       PHP_VERSION: $BACKOFFICE_PHP_VERSION
-      DRUPAL_DB_HOST: postgres
+      DRUPAL_DB_HOST: $BACKOFFICE_DB_HOST
       DRUPAL_SERVER_HOST: nginx
       DRUPAL_DB_DRIVER: $BACKOFFICE_DB_DRIVER
       DRUPAL_DB_PREFIX: $BACKOFFICE_DB_PREFIX

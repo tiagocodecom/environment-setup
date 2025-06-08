@@ -1,10 +1,11 @@
 #!/bin/bash
 
-echo ""
+set -euo pipefail
+
+echo "-----------------------------------------------------"
 echo "[ENV-TIAGOCODE.COM] hook: ApplicationStop"
-echo ""
+echo "-----------------------------------------------------"
 
+cd /home/ec2-user/env-tiagocode.com
 
-# docker-cvmpose down
-
-exit 0
+docker-compose down

@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-echo ""
-echo "[ENV-TIAGOCODE.COM] Hook: BeforeInstall"
-echo ""
+echo "-----------------------------------------------------"
+echo "[ENV-TIAGOCODE.COM] hook: BeforeInstall"
+echo "-----------------------------------------------------"
 
 # Install Docker & Docker Compose plugin
 sudo dnf install docker -y
@@ -18,5 +18,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo docker-compose --version
 
 
-GITHUB_PAT=$(aws ssm get-parameter --name "/tiagocode/ghcr/path" --with-decryption --query "Parameter.Value" --output text)
+# Login into Github Container Regitry
+GITHUB_PAT=$(aws ssm get-parameter --name "/tiagocode/ghcr/pat" --with-decryption --query "Parameter.Value" --output text)
 echo "$GITHUB_PAT" | docker login ghcr.io -u "smarulanda97" --password-stdin
