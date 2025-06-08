@@ -28,16 +28,16 @@ services:
       # api
       - "--api"
       - "--api.dashboard=true"
-      - "--api.insecure=false"
+      #- "--api.insecure=true"
       # providers
       - "--providers.docker.exposedbydefault=false"
       # entrypoints
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
       # middleware for redirecting traffic to https
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=false"
+      #- "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
+      #- "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
+      #- "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=false"
       # tls
       - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
@@ -161,8 +161,6 @@ services:
       - ./data/backoffice/files:/var/www/html/web/sites/default/files:cached
     networks:
       - backend_network
-    depends_on:
-      - postgres
  
   website:
     restart: always
@@ -181,3 +179,5 @@ services:
       - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.http.services.website.loadbalancer.server.port=3000"
       - "traefik.http.services.website.loadbalancer.server.scheme=http"
+      - "traefik.http.middlewares.website-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.website.middlewares=website-headers"
