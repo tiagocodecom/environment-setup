@@ -33,6 +33,7 @@ services:
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
       - "--entrypoints.postgres.address=:5432"
+      - "--entrypoints.redis.address=:6379"
       # middleware for redirecting traffic to https
       #- "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
       #- "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
@@ -54,6 +55,7 @@ services:
       - "80:80"
       - "443:443"
       - "5432:5432"
+      - "6379:6379"
     networks:
       - backend_network
     volumes:
@@ -108,12 +110,12 @@ services:
       - backend_network
     volumes:
       - redis_data:/data
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
-    #   - "traefik.tcp.routers.redis.service=redis"
-    #   - "traefik.tcp.routers.redis.entryPoints=redis"
-    #   - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.redis.service=redis"
+      - "traefik.tcp.routers.redis.entryPoints=redis"
+      - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
 
   nginx:
     build:
@@ -123,8 +125,7 @@ services:
         - NGINX_PHPFPM_HOST=backoffice
         - NGINX_SERVER_ROOT=/var/www/html/web
     volumes:
-      - backoffice_codebase:/var/www/html
-      - ./data/backoffice/files:/var/www/html/web/sites/default/files:cached
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html:cached
     networks:
       - backend_network
     depends_on:
@@ -153,8 +154,7 @@ services:
       DRUPAL_PRIVATE_FILES_PATH: $BACKOFFICE_PRIVATE_FILE_CONTAINER_PATH
       DRUPAL_PUBLIC_FILES_BASE_URL: https://${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}/sites/default/files
     volumes:
-      - backoffice_codebase:/var/www/html
-      - ./data/backoffice/files:/var/www/html/web/sites/default/files:cached
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html:cached
     networks:
       - backend_network
  

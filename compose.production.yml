@@ -20,12 +20,16 @@ services:
     ports: !override
       - "80:80"
       - "443:443"
-  nginx:
-    restart: always
   website:
     restart: always
+  nginx:
+    restart: always
+    volumes:
+      - backoffice_codebase:/var/www/html
   backoffice:
     restart: always
+    volumes:
+      - backoffice_codebase:/var/www/html
   redis:
     restart: always
   postgres: !reset []
