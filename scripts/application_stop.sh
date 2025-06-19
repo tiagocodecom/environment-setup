@@ -8,4 +8,7 @@ echo "-----------------------------------------------------"
 
 cd /home/ec2-user/env-tiagocode.com
 
-docker-compose down
+docker-compose \
+  -f compose.yml \
+  -f compose.production.yml \
+  down --remove-orphans

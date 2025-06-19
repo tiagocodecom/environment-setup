@@ -1,0 +1,34 @@
+services:
+  traefik:
+    restart: always
+    command:
+      - "--log.level=error"
+      - "--api"
+      - "--api.dashboard=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web_insecure.address=:80"
+      - "--entrypoints.web_secure.address=:443"
+      - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
+      - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
+      - "--certificatesresolvers.lets_encrypt.acme.storage=/data/acme.json"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge=true"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.delayBeforeCheck=0"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.provider=cloudflare"
+      - "--certificatesresolvers.lets_encrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.lets_encrypt.acme.dnsChallenge.resolvers=${TRAEFIK_CF_DNS}"
+      - "--accesslog.filepath=/data/access.log"
+    ports: !override
+      - "80:80"
+      - "443:443"
+  nginx:
+    restart: always
+  website:
+    restart: always
+  backoffice:
+    restart: always
+  redis:
+    restart: always
+  postgres: !reset []
+
+volumes:
+  postgres_data: !reset []
