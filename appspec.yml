@@ -10,6 +10,9 @@ permissions:
     group: ec2-user
 file_exists_behavior: OVERWRITE
 hooks:
+  # To see the logs:
+  # tail -f /opt/codedeploy-agent/deployment-root/deployment-logs/*log
+
   # You can use this deployment lifecycle event for preinstall tasks, 
   # such as decrypting files and creating a backup of the current version
   BeforeInstall:
