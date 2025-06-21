@@ -32,9 +32,9 @@ services:
       - "--entrypoints.postgres.address=:5432"
       - "--entrypoints.redis.address=:6379"
       # middleware for redirecting traffic to https
-      #- "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
-      #- "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
-      #- "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=false"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.to=web_secure"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web_insecure.http.redirections.entryPoint.permanent=false"
       # tls
       - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
