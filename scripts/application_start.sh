@@ -15,4 +15,4 @@ echo "$GITHUB_PAT" | docker login ghcr.io -u "smarulanda97" --password-stdin
 docker-compose \
   -f compose.yml \
   -f compose.production.yml \
-  up -d --build --pull always --force-recreate traefik nginx backoffice website redis
+  up -d --build --pull always --force-recreate
