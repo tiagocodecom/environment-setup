@@ -47,7 +47,7 @@ declare -A PARAMS=(
 for key in "${!PARAMS[@]}"; do
   ssm_param="${PARAMS[$key]}"
   value=$(aws ssm get-parameter --name "$ssm_param" --with-decryption --query "Parameter.Value" --output text)
+  escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\\/&]/\\&/g')
 
-  sed -i "s|^$key=.*|$key=$value|" ".env"
+  sed -i "s|^$key=.*|$key=$escaped_value|" ".env"
 done
-
