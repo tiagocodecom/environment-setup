@@ -20,6 +20,23 @@ services:
     ports: !override
       - "80:80"
       - "443:443"
+    labels: !override
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=web_secure"
+      - "traefik.http.routers.traefik.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.traefik.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}traefik.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
+      - "traefik.http.routers.traefik.middlewares=access-auth"
+      - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
+      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_USER_PASSWORD}"    
+      - "traefik.http.routers.root-redirect.rule=Host(`${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.routers.root-redirect.entryPoints=web_secure"
+      - "traefik.http.routers.root-redirect.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.root-redirect.middlewares=redirect-to-website"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.regex=^https?://${PROJECT_DOMAIN_NAME}/(.*)"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.replacement=https://website.${PROJECT_DOMAIN_NAME}/$$1"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.permanent=true"
   website:
     restart: always
   nginx:
@@ -36,6 +53,11 @@ services:
       - backoffice_private_files:/var/www/html/private:cached
   redis:
     restart: always
+    labels: !override
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.redis.service=redis"
+      - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
   postgres: !reset []
 
 volumes:

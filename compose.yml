@@ -70,7 +70,14 @@ services:
       - "traefik.http.services.api@internal.loadbalancer.server.port=8888"
       - "traefik.http.routers.traefik.middlewares=access-auth"
       - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
-      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_USER_PASSWORD}"      
+      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_USER_PASSWORD}"    
+      - "traefik.http.routers.root-redirect.rule=Host(`local.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.routers.root-redirect.entryPoints=web_secure"
+      - "traefik.http.routers.root-redirect.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.root-redirect.middlewares=redirect-to-website"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.regex=^https?://local.${PROJECT_DOMAIN_NAME}/(.*)"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.replacement=https://${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}/$$1"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.permanent=true"
 
   postgres:
     build:
