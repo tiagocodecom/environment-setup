@@ -54,7 +54,10 @@ services:
       - "5432:5432"
       - "6379:6379"
     networks:
-      - backend_network
+      backend_network:
+        aliases:
+          - ${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}
+          - ${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}
     volumes:
       - ./docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -165,7 +168,7 @@ services:
   website:
     image: $WEBSITE_IMAGE:$WEBSITE_VERSION
     environment:      
-      JSONAPI_BASE_URL: http://nginx
+      JSONAPI_BASE_URL: https://${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}
       JSONAPI_USERNAME: $WEBSITE_JSONAPI_USERNAME
       JSONAPI_PASSWORD: $WEBSITE_JSONAPI_PASSWORD
       JSONAPI_IMAGES_URL: $WEBSITE_JSONAPI_IMAGES_URL
