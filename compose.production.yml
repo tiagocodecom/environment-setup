@@ -39,6 +39,8 @@ services:
       - "traefik.http.middlewares.redirect-to-website.redirectregex.permanent=true"
   website:
     restart: always
+    labels:
+      - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`) || Host(`www.${PROJECT_DOMAIN_NAME}`)"
   nginx:
     restart: always
     volumes:
