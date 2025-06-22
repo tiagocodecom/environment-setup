@@ -44,13 +44,15 @@ services:
   nginx:
     restart: always
     volumes: !override
-      - backoffice_public_files:/var/www/html/web/sites/default/files:cached
-      - backoffice_private_files:/var/www/html/private:cached
+      - backoffice_codebase:/var/www/html:ro
+      - backoffice_private_files:/var/www/html/private:ro
+      - backoffice_public_files:/var/www/html/web/sites/default/files:ro
   backoffice:
     restart: always
     volumes: !override
-      - backoffice_public_files:/var/www/html/web/sites/default/files:cached
+      - backoffice_codebase:/var/www/html:cached
       - backoffice_private_files:/var/www/html/private:cached
+      - backoffice_public_files:/var/www/html/web/sites/default/files:cached
   redis:
     restart: always
     labels: !override
@@ -62,6 +64,9 @@ services:
 
 volumes:
   postgres_data: !reset []
+
+  backoffice_codebase:
+    driver: ${DOCKER_VOLUMES_DRIVER}
 
   backoffice_public_files:
     driver: ${DOCKER_VOLUMES_DRIVER}

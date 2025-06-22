@@ -132,7 +132,7 @@ services:
         - NGINX_PHPFPM_HOST=backoffice
         - NGINX_SERVER_ROOT=/var/www/html/web
     volumes:
-      - ${BACKOFFICE_HOST_PATH}:/var/www/html
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html:ro
     networks:
       - backend_network
     depends_on:
@@ -165,7 +165,7 @@ services:
       DRUPAL_S3FS_BUCKET: $AWS_BACKOFFICE_S3_BUCKET
       DRUPAL_S3FS_REGION: $AWS_BACKOFFICE_S3_REGION
     volumes:
-      - ${BACKOFFICE_HOST_PATH}:/var/www/html
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html:cached
     networks:
       - backend_network
  
