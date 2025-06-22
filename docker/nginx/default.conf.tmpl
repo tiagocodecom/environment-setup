@@ -11,6 +11,8 @@ server {
     # Default index files
     index index.php index.html;
 
+    root {{ getenv "NGINX_SERVER_ROOT" "/var/www/html" }};
+
     # Security headers
     add_header  X-XSS-Protection '1; mode=block';
     add_header  X-Frame-Options SAMEORIGIN;

@@ -43,12 +43,12 @@ services:
       - "traefik.http.routers.website.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}`) || Host(`www.${PROJECT_DOMAIN_NAME}`)"
   nginx:
     restart: always
-    volumes:
+    volumes: !override
       - backoffice_public_files:/var/www/html/web/sites/default/files:cached
       - backoffice_private_files:/var/www/html/private:cached
   backoffice:
     restart: always
-    volumes:
+    volumes: !override
       - backoffice_public_files:/var/www/html/web/sites/default/files:cached
       - backoffice_private_files:/var/www/html/private:cached
   redis:

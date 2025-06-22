@@ -131,6 +131,8 @@ services:
         - NGINX_VERSION=${NGINX_VERSION}
         - NGINX_PHPFPM_HOST=backoffice
         - NGINX_SERVER_ROOT=/var/www/html/web
+    volumes:
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html
     networks:
       - backend_network
     depends_on:
@@ -162,6 +164,8 @@ services:
       DRUPAL_S3FS_SECRET_KEY: $AWS_SECRET_KEY
       DRUPAL_S3FS_BUCKET: $AWS_BACKOFFICE_S3_BUCKET
       DRUPAL_S3FS_REGION: $AWS_BACKOFFICE_S3_REGION
+    volumes:
+      - ${BACKOFFICE_HOST_PATH}:/var/www/html
     networks:
       - backend_network
  
