@@ -35,7 +35,7 @@ services:
       - "traefik.http.routers.root-redirect.tls.certresolver=lets_encrypt"
       - "traefik.http.routers.root-redirect.middlewares=redirect-to-website"
       - "traefik.http.middlewares.redirect-to-website.redirectregex.regex=^https?://${PROJECT_DOMAIN_NAME}/(.*)"
-      - "traefik.http.middlewares.redirect-to-website.redirectregex.replacement=https://website.${PROJECT_DOMAIN_NAME}/$$1"
+      - "traefik.http.middlewares.redirect-to-website.redirectregex.replacement=https://www.${PROJECT_DOMAIN_NAME}/$$1"
       - "traefik.http.middlewares.redirect-to-website.redirectregex.permanent=true"
   website:
     restart: always
