@@ -20,4 +20,11 @@ docker-compose \
 docker-compose \
   -f compose.yml \
   -f compose.production.yml \
-  exec -it backoffice ./vendor/bin/drush config:import -y
+  exec -it backoffice drush config:import -y
+
+docker-compose \
+  -f compose.yml \
+  -f compose.production.yml \
+  exec -it backoffice drush cr
+
+  
