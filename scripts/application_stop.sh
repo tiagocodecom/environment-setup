@@ -18,3 +18,5 @@ if docker volume inspect tiagocode_backoffice_codebase >/dev/null 2>&1; then
 else
   echo "Docker volume 'tiagocode_backoffice_codebase' does not exist"
 fi
+
+docker image prune -f
