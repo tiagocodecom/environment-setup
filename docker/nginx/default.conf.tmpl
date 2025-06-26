@@ -13,6 +13,9 @@ server {
 
     root {{ getenv "NGINX_SERVER_ROOT" "/var/www/html" }};
 
+    fastcgi_read_timeout 300;
+    fastcgi_connect_timeout 60;
+
     # Security headers
     add_header  X-XSS-Protection '1; mode=block';
     add_header  X-Frame-Options SAMEORIGIN;
