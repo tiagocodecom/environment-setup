@@ -122,7 +122,7 @@ services:
       - "traefik.tcp.routers.redis.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.redis.service=redis"
       - "traefik.tcp.routers.redis.entryPoints=redis"
-      - "traefik.tcp.services.redis.loadbalancer.server.port=:6379"
+      - "traefik.tcp.services.redis.loadbalancer.server.port=6379"
 
   nginx:
     build:
