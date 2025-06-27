@@ -63,6 +63,8 @@ services:
         aliases:
           - ${PROJECT_SUBDOMAIN_PREFIX}admin.${PROJECT_DOMAIN_NAME}
           - ${PROJECT_SUBDOMAIN_PREFIX}website.${PROJECT_DOMAIN_NAME}
+          - ${PROJECT_SUBDOMAIN_PREFIX}rediswebsite.${PROJECT_DOMAIN_NAME}
+          - ${PROJECT_SUBDOMAIN_PREFIX}redisbackoffice.${PROJECT_DOMAIN_NAME}
     volumes:
       - ./docker/traefik/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -148,7 +150,7 @@ services:
       - "traefik.tcp.routers.redisbackoffice.entryPoints=redisbackoffice"
       - "traefik.tcp.services.redisbackoffice.loadbalancer.server.port=6379"
       - "traefik.tcp.routers.redisbackoffice.tls.certresolver=lets_encrypt"
-      
+
   nginx:
     build:
       context: ./docker/nginx
