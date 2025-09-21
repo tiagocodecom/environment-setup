@@ -54,6 +54,7 @@ services:
       - backoffice_codebase:/var/www/html:cached
       - backoffice_private_files:/var/www/html/private:cached
       - backoffice_public_files:/var/www/html/web/sites/default/files:cached
+      - ./backup:/var/www/html/backup
 
   redis_website:
     restart: always

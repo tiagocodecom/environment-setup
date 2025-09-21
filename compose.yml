@@ -196,6 +196,7 @@ services:
       DRUPAL_REDIS_PASSWORD: $REDIS_PASSWORD
     volumes:
       - ${BACKOFFICE_HOST_PATH}:/var/www/html:cached
+      - ./backup:/var/www/html/backup
     networks:
       - backend_network
  
