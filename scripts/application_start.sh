@@ -20,6 +20,11 @@ docker-compose \
 docker-compose \
   -f compose.yml \
   -f compose.production.yml \
+  exec -it backoffice drush updb -y
+
+docker-compose \
+  -f compose.yml \
+  -f compose.production.yml \
   exec -it backoffice drush config:import -y
 
 docker-compose \
