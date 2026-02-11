@@ -37,6 +37,7 @@ declare -A PARAMS=(
   [WEBSITE_JSONAPI_IMAGES_URL]="/tiagocode/service-frontend/images_url"
   [WEBSITE_JSONAPI_USERNAME]="/tiagocode/service-frontend/api_username"
   [WEBSITE_JSONAPI_PASSWORD]="/tiagocode/service-frontend/api_password"
+  [WEBSITE_CACHE_PURGE_TOKEN]="/tiagocode/service-frontend/cache_purge_token"
   [AWS_ACCESS_KEY]="/tiagocode/aws/access_key"
   [AWS_SECRET_KEY]="/tiagocode/aws/secret_key"
   [AWS_BACKOFFICE_S3_REGION]="/tiagocode/aws/region"
