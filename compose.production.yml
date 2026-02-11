@@ -8,6 +8,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
+      - "--entrypoints.redisbackoffice.address=:6379"
+      - "--entrypoints.rediswebsite.address=:6380"
       - "--entrypoints.web_secure.http.tls.domains[0].main=${PROJECT_DOMAIN_NAME}"
       - "--entrypoints.web_secure.http.tls.domains[0].sans=*.${PROJECT_DOMAIN_NAME}"
       - "--certificatesresolvers.lets_encrypt.acme.storage=/data/acme.json"
@@ -60,17 +62,21 @@ services:
     restart: always
     labels: !override
       - "traefik.enable=true"
-      - "traefik.tcp.routers.rediswebsite.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.rediswebsite.rule=HostSNI(`${PROJECT_SUBDOMAIN_PREFIX}rediswebsite.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.tcp.routers.rediswebsite.service=rediswebsite"
+      - "traefik.tcp.routers.rediswebsite.entryPoints=rediswebsite"
       - "traefik.tcp.services.rediswebsite.loadbalancer.server.port=6379"
+      - "traefik.tcp.routers.rediswebsite.tls.certresolver=lets_encrypt"
 
   redis_backoffice:
     restart: always
     labels: !override
       - "traefik.enable=true"
-      - "traefik.tcp.routers.redisbackoffice.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.redisbackoffice.rule=HostSNI(`${PROJECT_SUBDOMAIN_PREFIX}redisbackoffice.${PROJECT_DOMAIN_NAME}`)"
       - "traefik.tcp.routers.redisbackoffice.service=redisbackoffice"
+      - "traefik.tcp.routers.redisbackoffice.entryPoints=redisbackoffice"
       - "traefik.tcp.services.redisbackoffice.loadbalancer.server.port=6379"
+      - "traefik.tcp.routers.redisbackoffice.tls.certresolver=lets_encrypt"
 
   postgres: !reset []
 
