@@ -45,7 +45,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 6,
         "x": 0,
         "y": 0
@@ -112,7 +112,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 6,
         "x": 6,
         "y": 0
@@ -179,7 +179,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 6,
         "x": 12,
         "y": 0
@@ -229,7 +229,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 6,
         "x": 18,
         "y": 0
@@ -276,10 +276,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "id": 5,
       "options": {
@@ -320,10 +320,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 8
       },
       "id": 6,
       "options": {
@@ -371,10 +371,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 18
       },
       "id": 7,
       "options": {
@@ -422,10 +422,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 18
       },
       "id": 8,
       "options": {
@@ -471,6 +471,6 @@
   "timezone": "browser",
   "title": "Website Traffic Overview",
   "uid": "website-traffic-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

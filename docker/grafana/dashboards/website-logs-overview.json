@@ -45,7 +45,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 0,
         "y": 0
@@ -114,7 +114,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 8,
         "y": 0
@@ -183,7 +183,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 16,
         "y": 0
@@ -232,10 +232,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "id": 4,
       "options": {
@@ -279,10 +279,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 8
       },
       "id": 5,
       "options": {
@@ -317,7 +317,7 @@
         "type": "loki",
         "uid": "loki"
       },
-      "description": "Top IPs cliente (segun access logs de Traefik).",
+      "description": "Top IPs reales del visitante via header CF-Connecting-IP (Cloudflare).",
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
@@ -326,10 +326,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 18
       },
       "id": 6,
       "options": {
@@ -351,7 +351,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "topk(10, sum by (ClientHost) (count_over_time({compose_service=\"traefik\"} | json | RouterName=\"website@docker\" [15m])))",
+          "expr": "topk(10, sum by (client_ip) (count_over_time({compose_service=\"traefik\"} |= \"\\\"RouterName\\\":\\\"website@docker\\\"\" | regexp \"\\\"request_Cf-Connecting-Ip\\\":\\\"(?P<client_ip>[^\\\"]+)\\\"\" [15m])))",
           "queryType": "range",
           "refId": "A"
         }
@@ -366,10 +366,10 @@
       },
       "description": "Logs de requests con 4xx o 5xx para el website.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 18
       },
       "id": 7,
       "options": {
@@ -404,10 +404,10 @@
       },
       "description": "Errores de aplicacion del contenedor website.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 28
       },
       "id": 8,
       "options": {
@@ -449,10 +449,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 28
       },
       "id": 9,
       "options": {
@@ -502,6 +502,6 @@
   "timezone": "browser",
   "title": "Website Logs Overview",
   "uid": "website-logs-overview",
-  "version": 3,
+  "version": 5,
   "weekStart": ""
 }
