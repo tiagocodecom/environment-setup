@@ -78,6 +78,15 @@ services:
       - "traefik.tcp.services.redisbackoffice.loadbalancer.server.port=6379"
       - "traefik.tcp.routers.redisbackoffice.tls.certresolver=lets_encrypt"
 
+  grafana:
+    restart: always
+    labels: !override
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}grafana.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.routers.grafana.entrypoints=web_secure"
+      - "traefik.http.routers.grafana.tls.certresolver=lets_encrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
   postgres: !reset []
 
 volumes:

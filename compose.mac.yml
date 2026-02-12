@@ -1,0 +1,6 @@
+services:
+  backoffice:
+    platform: linux/amd64
+
+  website:
+    platform: linux/amd64

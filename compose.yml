@@ -11,6 +11,15 @@ volumes:
 
   redis_website_data:
     driver: ${DOCKER_VOLUMES_DRIVER}
+
+  grafana_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+  
+  loki_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+  alloy_data:
+    driver: ${DOCKER_VOLUMES_DRIVER}
   
 services:
   traefik:
@@ -67,7 +76,7 @@ services:
           - ${PROJECT_SUBDOMAIN_PREFIX}redisbackoffice.${PROJECT_DOMAIN_NAME}
     volumes:
       - ./docker/traefik/data:/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=web_secure"
@@ -222,3 +231,54 @@ services:
       - "traefik.http.services.website.loadbalancer.server.scheme=http"
       - "traefik.http.middlewares.website-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.routers.website.middlewares=website-headers"
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION}
+    environment:
+      - GF_SERVER_ROOT_URL=https://${PROJECT_SUBDOMAIN_PREFIX}grafana.${PROJECT_DOMAIN_NAME}
+      - GF_LOG_LEVEL=debug
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - backend_network
+    depends_on:
+      - loki
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.entrypoints=web_secure"
+      - "traefik.http.routers.grafana.tls.certresolver=lets_encrypt"
+      - "traefik.http.routers.grafana.rule=Host(`${PROJECT_SUBDOMAIN_PREFIX}grafana.${PROJECT_DOMAIN_NAME}`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.services.grafana.loadbalancer.server.scheme=http"
+      - "traefik.http.middlewares.grafana-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.grafana.middlewares=grafana-headers"
+
+  loki:
+    image: grafana/loki:${GRAFANA_LOKI_VERSION}
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./docker/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - backend_network
+
+  alloy:
+    image: grafana/alloy:${GRAFANA_ALLOY_VERSION}
+    environment:
+      - ALLOY_LOG_LEVEL=debug
+      - ALLOY_SERVER_HTTP_LISTEN_PORT=8080
+      - ALLOY_SERVER_GRPC_LISTEN_PORT=9095
+      - ALLOY_SERVER_GRPC_SERVER_MAX_CONCURRENT_STREAMS=1000
+      - ALLOY_COMMON_INSTANCE_ADDR=
+    volumes:
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend_network
+    depends_on:
+      - loki
