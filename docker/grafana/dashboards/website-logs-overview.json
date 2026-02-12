@@ -405,8 +405,8 @@
       "description": "Errores de aplicacion del contenedor website.",
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
+        "w": 12,
+        "x": 12,
         "y": 23
       },
       "id": 8,
@@ -434,6 +434,53 @@
       ],
       "title": "Website App Errors",
       "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Top paises detectados por header CF-IPCountry en requests del website.",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "topk(10, sum by (country) (count_over_time({compose_service=\"traefik\"} | json | RouterName=\"website@docker\" |= \"request_Cf-Ipcountry\" | regexp \"(?i)request_Cf-Ipcountry[^A-Z0-9]*(?P<country>[A-Z]{2}|T1|XX)\" [15m])))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Countries",
+      "type": "timeseries"
     }
   ],
   "refresh": "30s",
@@ -455,6 +502,6 @@
   "timezone": "browser",
   "title": "Website Logs Overview",
   "uid": "website-logs-overview",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

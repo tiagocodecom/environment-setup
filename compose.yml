@@ -63,6 +63,11 @@ services:
       # accesslogb
       - "--accesslog=true"
       - "--accesslog.format=json"
+      - "--accesslog.fields.headers.defaultmode=drop"
+      - "--accesslog.fields.headers.names.CF-IPCountry=keep"
+      - "--accesslog.fields.headers.names.CF-Connecting-IP=keep"
+      - "--accesslog.fields.headers.names.User-Agent=keep"
+      - "--accesslog.fields.headers.names.Referer=keep"
       # metrics
       - "--metrics.prometheus=true"
       - "--metrics.prometheus.entrypoint=metrics"
