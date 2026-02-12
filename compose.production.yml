@@ -87,6 +87,18 @@ services:
       - "traefik.http.routers.grafana.tls.certresolver=lets_encrypt"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
+  loki:
+    restart: always
+
+  alloy:
+    restart: always
+
+  prometheus:
+    restart: always
+
+  node_exporter:
+    restart: always
+
   postgres: !reset []
 
 volumes:

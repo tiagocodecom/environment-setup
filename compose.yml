@@ -236,12 +236,13 @@ services:
     image: grafana/grafana:${GRAFANA_VERSION}
     environment:
       - GF_SERVER_ROOT_URL=https://${PROJECT_SUBDOMAIN_PREFIX}grafana.${PROJECT_DOMAIN_NAME}
-      - GF_LOG_LEVEL=debug
+      - GF_LOG_LEVEL=warn
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - backend_network
@@ -282,3 +283,36 @@ services:
       - backend_network
     depends_on:
       - loki
+
+  prometheus:
+    image: prom/prometheus:${GRAFANA_PROMETHEUS_VERSION}
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "node_exporter:host-gateway"
+    networks:
+      - backend_network
+
+  node_exporter:
+    image: prom/node-exporter:${GRAFANA_NODE_EXPORTER_VERSION}
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - "--path.rootfs=/host"
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.disable-defaults"
+      - "--collector.cpu"
+      - "--collector.meminfo"
+      - "--collector.filesystem"
+      - "--collector.diskstats"
+      - "--collector.netdev"
+      - "--collector.loadavg"
+      - "--collector.stat"
+      - "--collector.time"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)"
+    volumes:
+      - "/:/host:ro"
