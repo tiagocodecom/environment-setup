@@ -39,6 +39,7 @@ services:
       # providers
       - "--providers.docker.exposedbydefault=false"
       # entrypoints
+      - "--entrypoints.metrics.address=:8082"
       - "--entrypoints.web_insecure.address=:80"
       - "--entrypoints.web_secure.address=:443"
       - "--entrypoints.postgres.address=:5432"
@@ -60,7 +61,14 @@ services:
       # the following line is the caserver for testing the certificates generating (comment it for prod)
       # - "--certificatesresolvers.lets_encrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # accesslogb
-      - "--accesslog.filepath=/data/access.log"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      # metrics
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=metrics"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addserviceslabels=true"
+      - "--metrics.prometheus.addentrypointslabels=true"
     ports:
       - "80:80"
       - "443:443"
